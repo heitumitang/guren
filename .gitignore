@@ -1,4 +1,4 @@
-# 你自己的 key 和隐私数据，绝不能进仓库
+# 自己key和隐私数据
 .env
 .env.local
 server/data/
