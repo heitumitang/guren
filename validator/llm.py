@@ -1,8 +1,4 @@
-"""统一的 LLM 调用层。
-
-约定：API key 由使用者自己提供，本项目不托管、不代购、不落盘。
-客户端请求时传入，环境变量仅作服务端/CLI 的兜底。
-"""
+"""统一的 LLM 调用层：key 由调用方提供或环境变量兜底，本项目不落盘。"""
 
 from __future__ import annotations
 
@@ -28,11 +24,7 @@ PROVIDERS = [
 
 
 def load_env(path=".env") -> None:
-    """读本地 .env 兜底配置。ponytail: 20 行内解决，不引入 python-dotenv。
-
-    CLI 和后端共用同一个实现 —— 之前后端不读 .env、靠批处理脚本去解析，
-    尾随空格和特殊字符会把 key 悄悄弄坏。
-    """
+    """读本地 .env 兜底配置（CLI 与后端共用）。"""
     from pathlib import Path
 
     p = Path(path)
@@ -86,7 +78,7 @@ def complete(messages: list[dict], temperature: float = 0.9, cfg: dict | None = 
     except urllib.error.HTTPError as e:
         detail = e.read().decode(errors="replace")[:200]
         if json_mode:
-            return _post(False)  # ponytail: provider 不认就退化成普通调用
+            return _post(False)  # provider 不认时退化成普通调用
         raise RuntimeError(f"{e.code} {detail}") from e
     except urllib.error.URLError as e:
         raise RuntimeError(f"连不上 {c['base_url']}：{e.reason}") from e

@@ -1,12 +1,4 @@
-"""时间拟人调度决策。
-
-决策 8 的落地。核心判断：真人最大的特征不是说话内容，是「你找 TA 的时候 TA 不一定在」。
-
-这里只做纯决策（给定时刻，返回什么时候回、回不回），不含异步执行 ——
-执行层要等真接入常驻服务再加，先把可验证的大脑写对。
-
-自检：python scheduler.py
-"""
+"""时间拟人调度决策：给定时刻，决定回不回、什么时候回、会不会主动找用户。"""
 
 from __future__ import annotations
 
@@ -64,7 +56,7 @@ def plan_reply(profile: dict, now: datetime, rng: random.Random | None = None) -
         nxt = next_online_start(profile, now)
         if nxt is None:
             return Decision(False, 0.0, "online_hours 配置无效，无法排期")
-        # ponytail: 睡醒后的延迟单独抖一次，别和在线时的延迟同分布
+        # 离线延迟额外抖一次，与在线延迟分布区分
         delay = (nxt - now).total_seconds() + r.uniform(lo, min(hi, 3600))
         reason = f"不在线（现在 {now:%H:%M}），排到 {nxt:%H:%M} 之后"
         return Decision(will, delay, reason if will else reason + "，但已读不回")
@@ -86,7 +78,7 @@ def plan_proactive(profile: dict, now: datetime, last_proactive_at: datetime | N
 
 
 if __name__ == "__main__":
-    # ponytail: 自检不引 persona_schema，调度器保持零依赖
+    # 自检保持零依赖，不引 persona_schema
     prof = {"behavior": {"online_hours": [[9, 12], [14, 18], [20, 24]],
                          "reply_delay_sec": [20, 600],
                          "reply_rate": 1.0, "proactive_rate": 0.0}}

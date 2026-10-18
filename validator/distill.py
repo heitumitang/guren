@@ -1,8 +1,4 @@
-"""对话流 -> 人格档案草稿（带证据链）+ 防幻觉校验 + 校准报告。
-
-核心不是"抽得全"，是"抽的每一条都能回溯到原文"。
-LLM 从聊天记录抽人格必然幻觉（把一次偶然情绪当性格），唯一解药是证据链 + 人眼核对。
-"""
+"""对话流 -> 人格档案草稿（带证据链）+ 防幻觉校验 + 校准报告。"""
 
 from __future__ import annotations
 
@@ -107,10 +103,7 @@ def call_llm(prompt: str, cfg: dict | None = None) -> dict:
 
 
 def validate(profile: dict, messages: list[dict]) -> list[str]:
-    """防幻觉校验。返回问题列表；空列表 = 通过。
-
-    这是全脚本最有价值的一段：抽错了不可怕，可怕的是你不知道它抽错了。
-    """
+    """防幻觉校验，返回问题列表；空列表=通过。"""
     issues = []
     messages = ensure_index(messages)
     n = len(messages)

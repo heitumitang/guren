@@ -1,6 +1,4 @@
-/// 时间拟人调度决策 —— server/scheduler.py 的 Dart 复刻。
-///
-/// 核心判断：真人最大的特征不是说话内容，是「你找 TA 的时候 TA 不一定在」。
+/// 时间拟人调度决策（server/scheduler.py 的 Dart 复刻）：按在线时段与回复率决定回不回、何时回。
 import 'dart:math';
 
 const List<List<int>> defaultOnline = [
@@ -72,7 +70,6 @@ Decision planReply(Map<String, dynamic> profile, DateTime now, [Random? rng]) {
   if (!isOnline(profile, now)) {
     final nxt = nextOnlineStart(profile, now);
     if (nxt == null) return Decision(false, 0.0, 'online_hours 配置无效，无法排期');
-    // ponytail: 睡醒后的延迟单独抖一次，别和在线时的延迟同分布
     final delay = nxt.difference(now).inMilliseconds / 1000.0 +
         (lo + r.nextDouble() * (min(hi, 3600.0) - lo));
     final reason = '不在线（现在 ${_hm(now)}），排到 ${_hm(nxt)} 之后';

@@ -1,14 +1,4 @@
-"""纯文本 / CSV 聊天导出 -> 对话流。
-
-截图 OCR 一次只能拿几十条，导出能拿几千条。这个模块负责把别人导出的文本吃进来，
-输出和 OCR 完全一样的格式：[{"i","speaker","text"}]，蒸馏器不用区分来源。
-
-支持三种导出行式（都是市面导出工具实际会写出来的样子）：
-    2023-05-01 12:30:00 张三      消息在下面几行
-    张三 2023-05-01 12:30:00
-    [2023-05-01 12:30] 张三
-CSV 按表头猜列：发送人 / 内容。
-"""
+"""纯文本 / CSV 聊天导出 -> 对话流（与 OCR 统一为 {"i","speaker","text"} 格式）。"""
 
 from __future__ import annotations
 
@@ -63,7 +53,7 @@ def parse_plain(text: str, me: tuple[str, ...] = ()) -> list[dict]:
     cur: dict | None = None
 
     def flush():
-        # ponytail: 导出常在消息之间插空行，不剥掉的话每条消息都拖个尾巴
+        # 导出常在消息间插空行，先剥掉
         if cur:
             cur["text"] = cur["text"].strip()
             if cur["text"] and not NOISE_RE.search(cur["text"]):

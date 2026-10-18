@@ -1,7 +1,4 @@
-/// 预设人格创建：勾选性格标签（高冷/温柔/毒舌…），后端合并 traits/flaws/风格
-/// 生成完整人格。对齐 Web 版「自由组合性格」路径。
-///
-/// 完成后 pop 返回 npc_id，由人物列表打开聊天（与蒸馏向导同一约定）。
+/// 预设人格创建：勾选性格标签，后端合并 traits/flaws/风格生成完整人格；完成后 pop 返回 npc_id。
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models.dart';

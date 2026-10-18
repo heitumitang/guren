@@ -1,7 +1,4 @@
-/// 人格档案 Schema v1 —— validator/persona_schema.py 的 Dart 复刻。
-///
-/// 这是全系统的数据契约：蒸馏器产出它、后端消费它、Flutter 编辑它。
-/// 内嵌后端（手机端）与 Python 后端读写的是同一套 JSON，格式必须逐字段对齐。
+/// 人格档案 Schema v1（validator/persona_schema.py 的 Dart 复刻）：内嵌后端与 Python 后端读写同一套 JSON，须逐字段对齐。
 const String schemaVersion = '1.0';
 
 /// 硬红线。写死在代码里，不可配置、不由用户关闭。
@@ -22,15 +19,14 @@ const Set<String> traitKeys = {
 };
 const Set<String> flawKeys = {'type', 'description', 'intensity', 'evidence', 'review'};
 
-/// 决策 7：记忆必须分三层。混在一个桶里，AI 会把自己知道的事当成你也知道。
+/// 记忆分三层（self/user/shared），混在一个桶里 AI 会把自己知道的当你也知道。
 const Map<String, String> memoryLayers = {
   'self': '关于你自己（你的近况、习惯、观点）',
   'user': '关于 TA（跟你聊天的这个人：TA 的近况、偏好、说过的事）',
   'shared': '你们之间（约定、一起做过的事、上次吵的架）',
 };
 
-/// 与 Python 端 datetime.now().isoformat(timespec="seconds") 完全同形，
-/// 因为未读计数靠这个字符串的字典序比较。
+/// 与 Python 端 isoformat(timespec=seconds) 同形，未读计数依赖该字符串的字典序比较。
 String nowIso([DateTime? t]) {
   final n = t ?? DateTime.now();
   String two(int v) => v.toString().padLeft(2, '0');
@@ -251,7 +247,7 @@ Map<String, dynamic> effective(Map<String, dynamic> profile) {
   return out;
 }
 
-/// 人格档案 -> 系统提示词。这里决定「像不像真人」，是整个项目最该反复调的地方。
+/// 人格档案 -> 系统提示词，决定「像不像真人」。
 String renderSystemPrompt(Map<String, dynamic> profile,
     {dynamic memoryLines, Map<String, dynamic>? userProfile}) {
   final p = effective(profile);

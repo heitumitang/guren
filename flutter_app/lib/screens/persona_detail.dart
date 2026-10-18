@@ -1,9 +1,4 @@
-/// 人格详情：查看 / 编辑一位 TA 的完整档案。
-///
-///   基本信息、关系 → PUT /characters/{id}/meta（部分更新）
-///   行为参数       → POST /characters/{id}/scale
-///   特质 / 缺点    → 只读展示（校准在蒸馏向导里做）
-///   蒸馏报告       → GET /characters/{id}/report（report.md 原文）
+/// 人格详情页：查看/编辑一位 TA 的完整档案（基本信息/关系/行为参数/特质/缺点/报告）。
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -91,8 +86,6 @@ class _PersonaDetailScreenState extends State<PersonaDetailScreen> {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
   }
 
-  // ---------- 编辑：基本信息 ----------
-
   Future<void> _editBasics() async {
     final p = _persona;
     if (p == null) return;
@@ -141,8 +134,6 @@ class _PersonaDetailScreenState extends State<PersonaDetailScreen> {
       _toast('保存失败：$e');
     }
   }
-
-  // ---------- 编辑：关系 ----------
 
   Future<void> _editRelation() async {
     final p = _persona;
@@ -202,8 +193,6 @@ class _PersonaDetailScreenState extends State<PersonaDetailScreen> {
       _toast('保存失败：$e');
     }
   }
-
-  // ---------- 编辑：资料（名字 / 头像） ----------
 
   Future<void> _editProfile() async {
     final p = _persona;
@@ -309,8 +298,6 @@ class _PersonaDetailScreenState extends State<PersonaDetailScreen> {
     }
   }
 
-  // ---------- 关系网 ----------
-
   /// 全量替换 relations（后端会做双向同步：对方档案里自动出现/移除反向关系）。
   Future<void> _saveRelations() async {
     try {
@@ -408,8 +395,6 @@ class _PersonaDetailScreenState extends State<PersonaDetailScreen> {
     await _saveRelations();
   }
 
-  // ---------- 保存：行为参数 ----------
-
   Future<void> _saveScale() async {
     try {
       await context.read<AppState>().api.scale(widget.npcId, _flawScale, _replyRate);
@@ -417,8 +402,6 @@ class _PersonaDetailScreenState extends State<PersonaDetailScreen> {
       _toast('保存失败：$e');
     }
   }
-
-  // ---------- 构建 ----------
 
   @override
   Widget build(BuildContext context) {
@@ -470,8 +453,6 @@ class _PersonaDetailScreenState extends State<PersonaDetailScreen> {
       ],
     );
   }
-
-  // ---------- 各区块 ----------
 
   Widget _card(String title, {Widget? trailing, required List<Widget> children}) {
     return Card(

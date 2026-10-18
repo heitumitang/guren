@@ -1,18 +1,4 @@
-"""后端：多 NPC 人格档案存取 + 校准 + 调度式对话。
-
-启动：uvicorn main:app --reload --port 8000   （在 server/ 目录下）
-
-多 NPC 数据布局：
-  data/
-    index.json                     # [{id, name, emoji, relation, basics, created_at, updated_at}]
-    characters/<id>/
-      persona.json                 # 人格档案（schema v1 + basics + relations）
-      memory.json                  # 三层记忆（每个 NPC 独立，不串线）
-      last_proactive.json
-      outbox.json / pending.json   # 由 dispatcher 管理
-
-API key 由调用方每次请求带入，后端不存。环境变量仅作服务端/CLI 兜底。
-"""
+"""多 NPC 人格档案后端：档案存取、校准、调度式对话与消息投递。"""
 
 from __future__ import annotations
 
@@ -31,8 +17,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
-# ponytail: 不设 PYTHONPATH 也要能 uvicorn main:app 直接跑。
-# PyInstaller 冻结态下 validator 模块已由 --paths 打进包，不能按源码树路径注入。
+# 开发态把 validator 加入模块搜索路径；冻结态由打包时 --paths 处理。
 FROZEN = getattr(sys, "frozen", False)
 if not FROZEN:
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "validator"))
@@ -45,8 +30,7 @@ import presets  # noqa: E402
 import scheduler  # noqa: E402
 
 if FROZEN:
-    # 整包自包含：数据目录跟程序走，可用 GUREN_DATA 覆盖（Flutter 启动器传入）。
-    # 默认目录名不能是 data/——Flutter Windows 运行时时资源目录叫 data/，会撞名。
+    # 数据目录随程序走；默认名避开 data/，与 Flutter 运行时资源目录撞名。
     DATA = Path(os.environ.get("GUREN_DATA") or Path(sys.executable).parent / "guren-data")
 else:
     llm.load_env(Path(__file__).resolve().parent.parent / "validator" / ".env")
@@ -134,18 +118,14 @@ def _load_history(npc_id: str) -> list[dict]:
 
 
 def _append_history(npc_id: str, entries: list[dict]) -> None:
-    """追加聊天记录。每 NPC 独立，退出/重进不丢。"""
+    """追加聊天记录（每 NPC 独立存储）。"""
     h = _load_history(npc_id)
     h.extend(entries)
     _save_npc(npc_id, "history.json", h[-500:])  # 只留最近 500 条
 
 
 def _unread_count(npc_id: str) -> int:
-    """未读 = 比「上次已读」更晚的 assistant 消息条数。
-
-    history 里的 at 全是 datetime.now().isoformat(timespec="seconds")（无时区的本地
-    秒级字符串），last_read 同格式，直接字符串比较即时间序。
-    """
+    """未读 = 晚于 last_read 的 assistant 消息数（at 为同格式 ISO 字符串，可直比）。"""
     last = _load_npc(npc_id, "last_read.json", None)
     n = 0
     for m in _load_history(npc_id):
@@ -236,8 +216,7 @@ class CreateIn(BaseModel):
 
 
 class MetaIn(BaseModel):
-    # 关系/头像字段用 None 区分：None=不改，传值（含空串）=更新/清空。
-    # 否则「部分更新」会把没传的字段清空（真踩过：PUT 时没传 relation，把 bond 清了）。
+    # None=不改，传值（含空串）=更新/清空，避免部分更新误清空字段。
     basics: dict | None = None
     relation: str | None = None       # 与用户的关系类型（relationship.bond）
     rel_context: str | None = None    # 与用户的共同经历（relationship.context）
@@ -245,7 +224,7 @@ class MetaIn(BaseModel):
     name: str = ""
     emoji: str = ""
     avatar: str | None = None         # 图片 dataURL（空=用 emoji 头像）
-    relations: list[dict] | None = None  # None=不改；[]=清空；非空=全量替换（双向同步）
+    relations: list[dict] | None = None  # None=不改；[]=清空；非空=全量替换并双向同步
 
 
 class UserIn(BaseModel):
@@ -300,7 +279,7 @@ def get_user():
 
 @app.put("/user")
 def put_user(body: UserIn):
-    """更新用户档案。NPC 聊天时会把它注入提示词，让 TA 了解你。"""
+    """更新用户档案，注入对话提示词让 NPC 了解用户。"""
     u = {k: getattr(body, k).strip() for k in persona_schema.USER_FIELDS}
     _save(USER, u)
     return {"ok": True, "user": u}
@@ -308,7 +287,7 @@ def put_user(body: UserIn):
 
 @app.get("/config/providers")
 def providers():
-    """只回报后端是否有兜底 key。不推荐任何厂商/模型（需求：不做推荐）。"""
+    """返回后端是否配了兜底 key，不推荐任何厂商/模型。"""
     return {"env_fallback": bool(os.environ.get("LLM_API_KEY"))}
 
 
@@ -383,7 +362,7 @@ def get_character(npc_id: str):
 
 @app.get("/characters/{npc_id}/report")
 def get_report(npc_id: str):
-    """读取蒸馏时生成的 report.md；不存在（如手动创建）时返回空串。"""
+    """读取蒸馏生成的 report.md，不存在时返回空串。"""
     _need_persona(npc_id)
     f = _npc_dir(npc_id) / "report.md"
     if not f.exists():
@@ -393,11 +372,7 @@ def get_report(npc_id: str):
 
 @app.delete("/characters/{npc_id}")
 def delete_character(npc_id: str):
-    """软删：移出索引 + 清空人格/记忆/历史/收件箱。不物理删目录。
-
-    沙箱环境会拦截 unlink/rmtree（WorkBuddy safe-delete 守卫抛 SystemExit），
-    而 data/ 是 gitignore 的开发数据 —— 清空即可达到「NPC 消失且数据失效」的效果。
-    """
+    """软删：移出索引并清空人格/记忆/历史/收件箱（不物理删目录）。"""
     p = _need_persona(npc_id)
     dispatcher.reset(npc_id)              # 取消在飞任务、清空 pending/outbox
     _save_npc(npc_id, "persona.json", persona_schema.new_profile("（已删除）"))
@@ -414,10 +389,7 @@ def delete_character(npc_id: str):
 
 
 def _sync_relations(npc_id: str, old_rels: list[dict], new_rels: list[dict]) -> None:
-    """关系双向同步：A 的 relations 变化后，同步到被指向 NPC 的反向关系。
-
-    规则：对称复制 relation/context/share_memory，name 用 A 的名字；删除 A→B 也删除 B→A。
-    """
+    """关系双向同步：A 的关系变化同步到被指向 NPC 的反向关系。"""
     p = _need_persona(npc_id)
     my_name = (p.get("meta") or {}).get("target_name", "") or npc_id
     old = {r.get("npc_id"): r for r in old_rels if r.get("npc_id")}
@@ -438,7 +410,7 @@ def _sync_relations(npc_id: str, old_rels: list[dict], new_rels: list[dict]) -> 
                 "share_memory": bool(nr.get("share_memory")),
                 "context": nr.get("context", ""),
             })
-        op["relations"] = op_rels        # 关键：列表推导出的新列表要写回 op，否则保存的是没更新的旧对象
+        op["relations"] = op_rels        # 必须写回 op，否则保存的是未更新的旧对象
         _save_npc(other_id, "persona.json", op)
         _upsert_index(other_id, op)
 
@@ -543,7 +515,7 @@ async def distill(body: DistillIn):
             prof["avatar"] = old.get("avatar", "")          # 图片头像保留
             # 用户手填的称呼/共同经历保留（蒸馏重建的 relationship 只含关系类型）
             prof["relationship"]["call_me"] = (old.get("relationship") or {}).get("call_me", "")
-            prof["relationship"]["context"] = (old.get("relationship") or {}).get("context", "")
+            prof["relationship"]["context"] = (old.get("relationship") or {}).get("context", "")  # 保留手填称呼/经历
         _save_npc(npc_id, "persona.json", prof)
         _save_npc(npc_id, "report.md", dz.render_report(raw, msgs, issues))
     else:
@@ -551,7 +523,7 @@ async def distill(body: DistillIn):
         _save_npc(npc_id, "persona.json", prof)
         _save_npc(npc_id, "report.md", dz.render_report(raw, msgs, issues))
 
-    # 换人了就干干净净重来：旧人的记忆、聊天记录、收件箱、主动记录都是上一个灵魂的
+    # 换人后清空记忆/历史/收件箱/主动记录
     _save_npc(npc_id, "memory.json", persona_schema.empty_memory())
     _save_npc(npc_id, "history.json", [])
     lp = _npc_dir(npc_id) / "last_proactive.json"
@@ -575,13 +547,13 @@ async def chat(npc_id: str, body: ChatIn):
     d = (scheduler.Decision(True, 0.0, "立即模式") if body.immediate
          else scheduler.plan_reply(p, now))
 
-    # 引用回复：把被引用的原话拼进当前消息，像微信的引用样式
+    # 引用回复：把被引用原话拼进当前消息
     user_message = body.message
     if body.quote and body.quote.get("text"):
         q_role = "我" if body.quote.get("role") == "user" else (p["meta"].get("target_name") or "TA")
         user_message = f"「引用 {q_role}：{body.quote['text']}」\n{body.message}"
 
-    # 已读不回：用户消息也要落盘（标已读），切走再回来不丢；不回直接返回。
+    # 已读不回时也要落盘用户消息（标已读），切走再回来不丢
     if not d.will_reply:
         _append_history(npc_id, [
             {"role": "user", "content": body.message,
@@ -589,7 +561,7 @@ async def chat(npc_id: str, body: ChatIn):
         ])
         return {"will_reply": False, "reason": d.reason, "reply_at": None}
 
-    # 先把用户消息落盘（延迟/立即/拦截都覆盖），否则切走再回来、或 LLM 还在跑时会丢消息。
+    # 先把用户消息落盘，避免切走或 LLM 未返回时丢消息
     _append_history(npc_id, [
         {"role": "user", "content": body.message, "at": now.isoformat(timespec="seconds")},
     ])
@@ -610,8 +582,7 @@ async def chat(npc_id: str, body: ChatIn):
     if any(new.values()):
         _save_npc(npc_id, "memory.json", engine.merge_memory(mem, new))
 
-    # 立即模式：补写 assistant。延迟模式：assistant 由 dispatcher 投递时写，
-    # 否则退出再进会「提前看到」还没到点的延迟回复。
+    # 延迟回复由 dispatcher 投递时写，否则退出重进会提前看到未到点的回复
     if body.immediate:
         _append_history(npc_id, [
             {"role": "assistant", "content": out["reply"], "at": now.isoformat(timespec="seconds")},
@@ -637,7 +608,7 @@ def get_history(npc_id: str):
 
 @app.post("/characters/{npc_id}/read")
 def mark_read(npc_id: str):
-    """标记已读：把「上次已读」推进到现在，未读清零。"""
+    """标记已读：把 last_read 推进到现在，未读清零。"""
     _need_persona(npc_id)
     _save_npc(npc_id, "last_read.json", datetime.now().isoformat(timespec="seconds"))
     return {"ok": True}
@@ -703,8 +674,7 @@ async def ocr(body: OcrIn):
     try:
         import ocr_parse
     except ImportError as e:
-        # 整包版已内置 rapidocr，走到这里说明是开发模式（未装 OCR 依赖）在跑：
-        # 明确告诉用户走文本导入，而不是让 ImportError 在 asyncio.to_thread 里把线程炸掉。
+        # 开发态未装 OCR 依赖时明确报错，避免 ImportError 在后台线程崩溃
         raise HTTPException(
             400, f"截图 OCR 缺依赖（{e}）。开发模式请先 "
                  "pip install rapidocr-onnxruntime，或改用「粘贴聊天记录」文本导入。") from e
@@ -732,7 +702,7 @@ async def ocr(body: OcrIn):
 # ---------- 内置服务器入口（PyInstaller 冻结后由 Flutter 客户端自动拉起） ----------
 
 def _watch_parent(parent_pid: int) -> None:
-    """父进程（故人 App）退出时自杀，防止孤儿进程占着 8000 端口。"""
+    """父进程退出时自杀，防止孤儿进程占着 8000 端口。"""
     if not parent_pid or sys.platform != "win32":
         return
     try:
@@ -750,7 +720,7 @@ def _watch_parent(parent_pid: int) -> None:
 
         threading.Thread(target=_waiter, daemon=True).start()
     except Exception:
-        pass  # ponytail: 看门狗是保险不是必需品，失败不影响服务
+        pass  # 看门狗失败不影响主服务
 
 
 if __name__ == "__main__":
@@ -764,7 +734,7 @@ if __name__ == "__main__":
             format="%(asctime)s %(levelname)s %(message)s",
         )
     except OSError:
-        pass  # 日志写不了就算了，别耽误起服务
+        pass  # 日志写不了不影响起服务
     _watch_parent(int(os.environ.get("GUREN_PARENT_PID", "0") or 0))
     logging.info("guren-server starting: port=%s data=%s frozen=%s",
                  port, DATA, FROZEN)

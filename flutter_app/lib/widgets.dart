@@ -151,11 +151,7 @@ class _TypingIndicatorState extends State<TypingIndicator>
   }
 }
 
-/// AI 生成内容声明条（合规要求显著标识）。
-///
-/// 对齐 Web 版：`AI` 徽标 + 「所有回复由模型生成，不是真人」常驻，
-/// 合规长文可折叠；折叠只收起长文案，徽标与结论不收起。
-/// 开合状态持久化（shared_preferences，键 aiNoticeOpen），默认展开。
+/// AI 生成内容声明条（合规要求显著标识），折叠态持久化于 aiNoticeOpen，默认展开。
 class AiNoticeBar extends StatefulWidget {
   const AiNoticeBar({super.key});
 

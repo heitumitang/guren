@@ -1,7 +1,4 @@
-/// App 内嵌后端：用 dart:io 的 HttpServer 起一个只监听 127.0.0.1 的 REST 服务，
-/// 端点路径与请求/响应字段严格对齐 server/main.py —— ApiClient 不用改一行就能连它。
-///
-/// 存在的意义：手机端没法跑 Python，把后端复刻进 App 后，装个 APK 就能独立使用。
+/// App 内嵌后端：dart:io HTTP 服务，只监听 127.0.0.1，端点与 server/main.py 严格对齐。
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -48,8 +45,6 @@ class EmbeddedServer {
     await _server?.close(force: true);
     _server = null;
   }
-
-  // ---------------- 路由 ----------------
 
   Future<void> _handle(HttpRequest req) async {
     _cors(req);
@@ -190,7 +185,7 @@ class EmbeddedServer {
     }
 
     if (segs.length == 1 && segs[0] == 'ocr') {
-      // 手机/桌面内置后端不跑 Python，RapidOCR 用不了。给句人话，别让 UI 崩。
+      // 内置后端不跑 Python，RapidOCR 用不了，给句人话避免 UI 崩。
       throw ApiError(
         HttpStatus.badRequest,
         '内置后端不支持截图 OCR（需要 Python 版后端）。手机端请改用「粘贴聊天记录」导入。',
@@ -199,8 +194,6 @@ class EmbeddedServer {
 
     throw ApiError(HttpStatus.notFound, '未知接口 /${segs.join('/')}');
   }
-
-  // ---------------- 人物 ----------------
 
   Future<Map<String, dynamic>> _create(Map<String, dynamic> b) async {
     final tags = (b['tags'] as List? ?? const []).map((e) => e.toString()).toList();
@@ -348,8 +341,6 @@ class EmbeddedServer {
     return {'ok': true, 'flaw_intensity_scale': v};
   }
 
-  // ---------------- 聊天 ----------------
-
   Future<Map<String, dynamic>> _chat(String id, Map<String, dynamic> b) async {
     final p = await store.needPersona(id);
     final mem = await store.loadMemory(id);
@@ -362,7 +353,7 @@ class EmbeddedServer {
         ? sch.Decision(true, 0.0, '立即模式')
         : sch.planReply(p, now);
 
-    // 引用回复：把被引用的原话拼进当前消息，像微信的引用样式
+    // 引用回复：把被引用的原话拼进当前消息（微信式引用样式）
     var userMessage = message;
     final quote = b['quote'];
     if (quote is Map && (quote['text'] ?? '').toString().isNotEmpty) {
@@ -372,7 +363,7 @@ class EmbeddedServer {
       userMessage = '「引用 $qRole：${quote['text']}」\n$userMessage';
     }
 
-    // 已读不回：用户消息也要落盘（标已读），切走再回来不丢；不回直接返回。
+    // 已读不回也要落盘用户消息（标已读），切走再回来不丢
     if (!d.willReply) {
       await store.appendHistory(id, [
         {'role': 'user', 'content': message, 'at': nowIso(now), 'read': true},
@@ -380,7 +371,7 @@ class EmbeddedServer {
       return {'will_reply': false, 'reason': d.reason, 'reply_at': null};
     }
 
-    // 先把用户消息落盘（延迟/立即/拦截都覆盖），否则切走再回来、或 LLM 还在跑时会丢消息。
+    // 先把用户消息落盘（延迟/立即/拦截都覆盖），否则切走再回来或 LLM 还在跑时会丢
     await store.appendHistory(id, [
       {'role': 'user', 'content': message, 'at': nowIso(now)},
     ]);
@@ -496,8 +487,6 @@ class EmbeddedServer {
     };
   }
 
-  // ---------------- 蒸馏 ----------------
-
   Future<Map<String, dynamic>> _distill(Map<String, dynamic> b) async {
     final msgsRaw = b['messages'] as List? ?? const [];
     if (msgsRaw.isEmpty) throw ApiError(HttpStatus.badRequest, 'messages 不能为空');
@@ -555,7 +544,7 @@ class EmbeddedServer {
           npcId, 'report.md', dz.renderReport(raw, msgs, issues));
     }
 
-    // 换人了就干干净净重来：旧人的记忆、聊天记录、收件箱、主动记录都是上一个灵魂的
+    // 换人就清空旧人的记忆/聊天记录/收件箱/主动记录
     await store.saveNpc(npcId, 'memory.json', emptyMemory());
     await store.saveNpc(npcId, 'history.json', <dynamic>[]);
     final lp = File('${store.npcDir(npcId)}${Platform.pathSeparator}last_proactive.json');
@@ -574,8 +563,6 @@ class EmbeddedServer {
       'flaws': (prof['flaws'] as List).length,
     };
   }
-
-  // ---------------- 响应 ----------------
 
   void _cors(HttpRequest req) {
     final h = req.response.headers;

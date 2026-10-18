@@ -37,32 +37,6 @@ lib/
     preset_create.dart 性格标签组合创建
 ```
 
-## 构建
-
-```bash
-flutter pub get
-
-flutter build windows --release   # build/windows/x64/runner/Release/
-flutter build apk --release       # build/app/outputs/flutter-apk/app-release.apk
-```
-
-打 APK 需要 JDK 21，用 `JAVA_HOME` 指过去：
-
-```bash
-JAVA_HOME="C:/path/to/jdk-21" flutter build apk --release
-```
-
-Windows 构建需要开启系统的「开发人员模式」（插件要建 symlink）。
-
-## 运行调试
-
-```bash
-flutter run -d windows
-flutter run -d <android-device>
-```
-
-桌面端启动时会先尝试拉起 `server/guren-server.exe`，找不到就连内置后端。
-
 ## 数据位置
 
 | 平台 | 位置 |

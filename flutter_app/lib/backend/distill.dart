@@ -1,7 +1,4 @@
-/// 对话流 -> 人格档案草稿（带证据链）+ 防幻觉校验 + 校准报告。
-/// validator/distill.py 的 Dart 复刻。
-///
-/// 核心不是「抽得全」，是「抽的每一条都能回溯到原文」。
+/// 对话流 -> 人格档案草稿（带证据链）+ 防幻觉校验 + 校准报告（validator/distill.py 的 Dart 复刻）。
 import 'dart:convert';
 
 import 'llm.dart';
@@ -111,9 +108,7 @@ Future<Map<String, dynamic>> callDistill(
   }
 }
 
-/// 防幻觉校验。返回问题列表；空列表 = 通过。
-///
-/// 这是全脚本最有价值的一段：抽错了不可怕，可怕的是你不知道它抽错了。
+/// 防幻觉校验：返回问题列表，空列表 = 通过。
 List<String> validateDistill(Map<String, dynamic> profile, List<dynamic> messages) {
   final issues = <String>[];
   final msgs = ensureIndex(messages);

@@ -1,5 +1,4 @@
-/// 聊天页：加载历史、发送（引用 / 立即模式）、延迟回复轮询收件箱、
-/// 主动发起、时间表预览。
+/// 聊天页：加载历史、发送（引用/立即模式）、轮询收件箱收延迟回复、主动发起与时间表预览。
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';

@@ -1,8 +1,4 @@
-/// 人物列表：展示已蒸馏的 TA，支持创建 / 进入 / 删除。
-///
-/// 响应式布局（微信式）：
-/// - 桌面（宽度 >= 720）：左栏聊天列表 + 右栏聊天页，同屏双栏。
-/// - 手机：单栏，点列表项 push 进聊天页。
+/// 人物列表页：展示已蒸馏的 TA，支持创建/进入/删除；桌面双栏、手机单栏。
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -68,7 +64,6 @@ class _CharacterListScreenState extends State<CharacterListScreen> {
     try {
       await s.refreshCharacters();
     } on Exception {
-      // 静默
     }
   }
 
@@ -248,8 +243,6 @@ class _CharacterListScreenState extends State<CharacterListScreen> {
     }
   }
 
-  // ---------- 列表主体 ----------
-
   Widget _buildList(AppState s) {
     if (s.characters.isEmpty) {
       return const Center(
@@ -316,8 +309,6 @@ class _CharacterListScreenState extends State<CharacterListScreen> {
       },
     );
   }
-
-  // ---------- 桌面双栏 ----------
 
   Widget _desktopHeader() {
     return SafeArea(
@@ -401,8 +392,6 @@ class _CharacterListScreenState extends State<CharacterListScreen> {
       ),
     );
   }
-
-  // ---------- 手机单栏 ----------
 
   Widget _buildMobile(AppState s) {
     return Scaffold(

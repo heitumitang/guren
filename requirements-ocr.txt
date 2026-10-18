@@ -1,8 +1,0 @@
-# 截图 OCR（/ocr 接口）依赖 —— 默认「不」装进镜像，让核心镜像更轻、build 更稳。
-#
-# 需要 OCR 时，进容器一键安装：
-#   docker compose exec persona pip install -r /app/requirements-ocr.txt
-#   （Debian 系还需系统库： apt-get update && apt-get install -y libglib2.0-0 libgomp1）
-pillow>=10.0
-numpy>=1.26
-rapidocr-onnxruntime>=1.3

@@ -67,49 +67,6 @@
 
 每个角色的记忆和聊天记录彼此独立，退出重进不丢。
 
-## 自定义后端
-
-App 自带后端，开箱即用。也可以把后端单独跑起来，用网页版客户端：
-
-```bash
-docker compose up -d --build
-# 浏览器打开 http://<这台机器的IP>:8000/app
-```
-
-或者不用 Docker：
-
-```bash
-pip install -r requirements-docker.txt
-cd server
-python -m uvicorn main:app --host 127.0.0.1 --port 8000
-```
-
-Windows 下可直接双击 `run-server.bat`。
-
-- Key 在网页右上角「设置」里填，只存你浏览器本机。
-- 数据（人格档案 / 记忆 / 收件箱）都在 `./server/data`，删容器不丢。
-
-## 从源码构建
-
-需要 Flutter 3.47+，打 APK 还需要 JDK 21。
-
-```bash
-cd flutter_app
-flutter pub get
-
-flutter build windows --release   # 产物在 build/windows/x64/runner/Release/
-flutter build apk --release       # 产物在 build/app/outputs/flutter-apk/
-```
-
-Windows 版如果要带 Python 后端（含截图 OCR），把 `server/` 用 PyInstaller 打成单文件 exe，放到 exe 同级的 `server/` 目录下：
-
-```bash
-cd server
-pyinstaller --onefile --windowed --name guren-server main.py
-```
-
-不打包后端也能跑：App 起不来外部后端时会自动回退到内置的 Dart 后端，只是没有 OCR。
-
 ## 三条不可协商的红线
 
 写死在代码里，**不在配置里、没有接口能改**：

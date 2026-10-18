@@ -1,13 +1,4 @@
-"""常驻调度执行层（多 NPC 版）。
-
-决策 8 的下半身：scheduler 决定「什么时候回」，这里负责「真的到点送到」。
-
-关键设计：**生成和投递分离**。
-收到消息就立刻生成回复（此时调用方带着 key），再按调度延迟投递 ——
-这样 key 不需要落盘，进程重启后待投递的内容也还在。
-
-多 NPC：outbox/pending 按 NPC 分目录，彼此隔离，不会串线。
-"""
+"""常驻调度执行层：按 scheduler 的排期把已生成的回复延迟投递到各 NPC 收件箱。"""
 
 from __future__ import annotations
 
@@ -67,7 +58,7 @@ def _drop_pending(npc_id: str, task_id: str) -> None:
     _save(_pending(npc_id), [t for t in _load(_pending(npc_id), []) if t.get("id") != task_id])
 
 
-# 在飞的投递任务。不跟踪的话 reset() 之后，旧人的定时消息还会落进新人的收件箱。
+# 在飞的投递任务；不跟踪的话 reset() 后旧人的定时消息会落进新人收件箱。
 _tasks: set = set()
 
 
@@ -138,7 +129,7 @@ def reset(npc_id: str | None = None) -> None:
 
 
 def _task_npc(t) -> str | None:
-    """从 asyncio.Task 里取回 npc_id。ponytail: 把 npc_id 挂到 task 属性上最省事。"""
+    """从 asyncio.Task 里取回 npc_id。"""
     return getattr(t, "_npc_id", None)
 
 

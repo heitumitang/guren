@@ -59,7 +59,7 @@ def cmd_distill(a) -> None:
     msgs = import_parse.load_any(a.chat, me)
     prompt = distill.build_prompt(msgs, a.target)
     if a.dry_run:
-        out = a.out or "prompt.txt"  # ponytail: -o 默认 None，避免 dry-run 误写 profile.json
+        out = a.out or "prompt.txt"  # -o 默认 None，避免 dry-run 误写 profile.json
         Path(out).write_text(distill.SYSTEM_PROMPT + "\n\n" + prompt, encoding="utf-8")
         print(f"{len(msgs)} 条对话 -> prompt 已写入 {out}（{len(prompt)} 字符）")
         print("没有 API key 也能验证：把这个 prompt 贴进任意聊天模型，看输出质量")

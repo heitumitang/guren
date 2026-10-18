@@ -1,12 +1,4 @@
-/// 聊天记录导入解析器。
-///
-/// 把用户粘贴的聊天导出解析成后端 /distill 认识的 messages：
-///   [{"i": 序号, "speaker": "target"|"user", "text": "内容"}]
-///
-/// 支持两种常见导出格式（可混用、自动续接）：
-///   1. 微信/QQ 导出：「名字 12:30」单独一行，下面是内容（可多行）
-///   2. 单行式：「名字：内容」
-/// 说话人判定：与 TA 名字精确匹配 → target；其余 → user。
+/// 把用户粘贴的聊天导出解析成后端 /distill 所需的 messages（支持微信/QQ 头部式与单行式）。
 library;
 
 class ImportMessage {
@@ -36,8 +28,7 @@ final _timeHeader = RegExp(
 // 「名字：内容」（名字里不含冒号/标点，限 20 字以内）
 final _colonPrefix = RegExp(r'^([^：:，。！？,,.!?\n]{1,20})[：:]\s*(.*)$');
 
-/// 解析聊天导出。[targetName] 是 TA 的名字（用于区分对话双方）；
-/// [userName] 是用户自己的名字（可选，只在无法精确匹配时辅助判定）。
+/// 解析聊天导出，[targetName] 为 TA 的名字，[userName] 仅在无法精确匹配时辅助判定。
 ParsedExport parseChatExport(String raw, String targetName,
     {String userName = ''}) {
   final entries = <MapEntry<String, String>>[]; // speaker -> text（续接行会拼进上一条）

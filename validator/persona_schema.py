@@ -1,10 +1,4 @@
-"""人格档案 Schema v1 —— 全系统数据契约。
-
-蒸馏器产出它、后端消费它、Flutter 编辑它、导出分享它。
-这个东西定错了，后面全得返工，所以它自带校验和自检。
-
-零依赖，标准库即可跑：python persona_schema.py
-"""
+"""人格档案 Schema v1 —— 全系统数据契约，自带校验与自检。"""
 
 from __future__ import annotations
 
@@ -14,8 +8,7 @@ from datetime import datetime, timezone
 
 SCHEMA_VERSION = "1.0"
 
-# 硬红线。决策：写死在代码里，不进 schema、不可配置、不由用户关闭。
-# 提示词能被绕过，所以输出层还要再过滤一次（见 server 侧 redline_filter）。
+# 硬红线：写死在代码里，不可配置/关闭；输出层还会再过滤一次
 RED_LINES = (
     "不人身攻击、不辱骂、不羞辱对方",
     "不泄露任何真实人物的隐私信息（住址、证件号、账号、他人秘密）",
@@ -26,8 +19,7 @@ RED_LINES = (
 _TRAIT_KEYS = {"name", "description", "weight", "confidence", "evidence", "review"}
 _FLAW_KEYS = {"type", "description", "intensity", "evidence", "review"}
 
-# 决策 7：记忆必须分三层。混在一个桶里，AI 会把自己知道的事当成你也知道
-# —— 这是所有聊天机器人的通病。
+# 记忆分三层：混在一个桶里 AI 会把自己知道的事当成你也知道
 MEMORY_LAYERS = {
     "self": "关于你自己（你的近况、习惯、观点）",
     "user": "关于 TA（跟你聊天的这个人：TA 的近况、偏好、说过的事）",
@@ -131,7 +123,7 @@ def new_profile(target_name: str = "", source_platform: str = "") -> dict:
         },
         "relationship": {"bond": "", "asymmetry": "", "context": "", "call_me": "", "evidence": []},
         "samples": [],
-        "style_samples": [],        # create-ex Layer 2 思路：情境 -> 原话，模型模仿例句远强于 obey 形容词
+        "style_samples": [],        # 情境 -> 原话样本
         "flaw_intensity_scale": 0.7,   # 全局缺点强度滑块，默认 70
         "review_status": "draft",      # draft | approved
         "warnings": [],
@@ -200,7 +192,7 @@ def effective(profile: dict) -> dict:
 
 
 def render_system_prompt(profile: dict, memory_lines=None, user_profile: dict | None = None) -> str:
-    """人格档案 -> 系统提示词。这里决定"像不像真人"，是整个项目最该反复调的地方。"""
+    """人格档案 -> 系统提示词。"""
     p = effective(profile)
     name = p["meta"].get("target_name") or "对方"
     st = p["speech_style"]
@@ -262,8 +254,7 @@ def render_system_prompt(profile: dict, memory_lines=None, user_profile: dict | 
         "",
     ]
 
-    # create-ex Layer 2：给原话例句。但样本少时模型会照抄成「背台词」，
-    # 所以这里必须把例句降级成「风格参考」，把生成主动权交还给上面的行为规则。
+    # 例句降级为风格参考，避免模型照抄成背台词
     if p.get("style_samples"):
         L += [
             "# 你说话的风格参考（只是参考，不是台词库）",
@@ -308,8 +299,7 @@ def render_system_prompt(profile: dict, memory_lines=None, user_profile: dict | 
 
     mem = render_memory(memory_lines)
     if mem:
-        # create-ex 方法论：记忆是「按场景触发调用的答案原材料」，不是背景板。
-        # 只说「是背景」不够——模型仍会把背景当话题罗列，必须给出「什么时候用、怎么用」。
+        # 记忆按场景触发调用，不是背景板
         L += [
             "# 你记得的事（对方问到才调用，绝不主动提）",
             "下面每条都是你们聊过的具体场景。它们是「答案的原材料」，不是你要说的话题：",
@@ -361,7 +351,7 @@ def to_card_v3(profile: dict) -> dict:
             "system_prompt": render_system_prompt(profile),
             "creatorcomment": f"由人格蒸馏器生成，缺点强度 {p.get('flaw_intensity_scale')}",
             "tags": [m.get("source_platform", ""), "distilled-persona"],
-            "extensions": {"persona_v1": profile},  # ponytail: 不丢信息的唯一办法
+            "extensions": {"persona_v1": profile},  # 完整 v1 存进 extensions，导出不丢信息
         },
     }
 

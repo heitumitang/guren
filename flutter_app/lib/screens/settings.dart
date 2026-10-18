@@ -216,8 +216,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         .showSnackBar(const SnackBar(content: Text('已清除本地配置')));
   }
 
-  /// 手机端的内置后端状态。跑起来了才说「已启用」——
-  /// 否则会显示一个假的成功状态，用户还以为能用，其实一直连不上。
+  /// 手机端内置后端状态；只有真跑起来才显示「已启用」，避免假成功误导。
   Widget _buildEmbeddedStatus() {
     final s = context.watch<AppState>();
     final ok = s.embedded && s.connected;

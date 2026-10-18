@@ -1,8 +1,4 @@
-"""人格引擎：组装提示词 -> 调 LLM -> 输出红线过滤 -> 记忆。
-
-红线在 persona_schema.render_system_prompt 里已经写进提示词，但提示词能被绕过，
-所以这里再拦一道。两道都不完美，两道一起才够用。
-"""
+"""人格引擎：组装提示词 -> 调 LLM -> 红线过滤 -> 记忆抽取。"""
 
 from __future__ import annotations
 
@@ -10,13 +6,13 @@ import re
 import sys
 from pathlib import Path
 
-# ponytail: 与 main.py 同一段 path 处理，保证 engine 也能单独 import
+# 与 main 同款：开发态把 validator 加入模块搜索路径
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "validator"))
 
 import llm  # noqa: E402
 import persona_schema  # noqa: E402
 
-# 辱骂/人身攻击。ponytail: 小表兜底，覆盖不了全部，靠提示词补。
+# 辱骂/人身攻击兜底词表
 ABUSE_WORDS = ("傻逼", "智障", "去死", "滚蛋", "有病吧", "废物", "贱")
 PRIVACY_PATTERNS = {
     "手机号": re.compile(r"(?<!\d)1[3-9]\d{9}(?!\d)"),
@@ -28,7 +24,7 @@ SELF_HARM = re.compile(r"(怎么自杀|去死吧|不想活了|自残的方法|�
 
 
 def redline_check(text: str) -> str | None:
-    """返回违规原因，None = 通过。这是安全路径，别简化掉。"""
+    """返回违规原因，None = 通过（安全路径）。"""
     for w in ABUSE_WORDS:
         if w in text:
             return f"疑似人身攻击：含「{w}」"
@@ -41,11 +37,7 @@ def redline_check(text: str) -> str | None:
 
 
 def _echo_check(reply: str, user_message: str, history: list[dict] | None) -> str | None:
-    """检测回复是否原样复述了对话/例句内容。返回被复述的原话，None=没复述。
-
-    偶发复述没法靠提示词根治（模型有时就是会照抄），所以输出层再拦一道：
-    回复里若整段照搬了最近一条对话的原文，就判为复述。
-    """
+    """检测回复是否原样复述了对话/例句原文，返回被复述原话，None=没复述。"""
     def norm(s: str) -> str:
         return re.sub(r"[\s，。！？、,.!?…~～\"'「」“”]+", "", s or "").strip()
 
@@ -75,11 +67,7 @@ def _echo_check(reply: str, user_message: str, history: list[dict] | None) -> st
 def chat(profile: dict, user_message: str, history: list[dict] | None = None,
          memory_lines: list[str] | None = None, cfg: dict | None = None,
          user_profile: dict | None = None) -> dict:
-    """一次对话。cfg 是使用者自己的 LLM 配置（key 不落盘）。
-
-    user_profile 是全局用户档案，让 TA 了解正在聊天的人是谁。
-    返回 {"reply", "blocked", "reason", "raw"}。
-    """
+    """一次对话：组装提示词 -> 调 LLM -> 红线过滤，返回 {reply, blocked, reason, raw}。"""
     system = persona_schema.render_system_prompt(profile, memory_lines, user_profile)
     msgs = [{"role": "system", "content": system}]
     for h in history or []:
@@ -105,22 +93,18 @@ def chat(profile: dict, user_message: str, history: list[dict] | None = None,
 
     reason = redline_check(reply)
     if reason:
-        # 不重试、不改写——直接拦下暴露给人看，silent fix 会掩盖人格跑偏
+        # 直接拦下并暴露原因，改写会掩盖人格跑偏
         return {"reply": "", "blocked": True, "reason": reason, "raw": reply}
     return {"reply": reply, "blocked": False, "reason": None, "raw": reply}
 
 
 def extract_memories(profile: dict, user_message: str, reply: str,
                      cfg: dict | None = None) -> dict:
-    """从一轮对话里抽三层记忆。ponytail: V1 用 LLM 抽，mem0 以后再接。
-
-    返回 {"self": [...], "user": [...], "shared": [...]}。
-    """
+    """从一轮对话里抽三层记忆，返回 {self, user, shared}。"""
     who = profile["meta"].get("target_name", "对方")
     prompt = (
         "从下面这段对话里，抽出值得长期记住的事实。严格按三行输出，没有就留空：\n"
-        # ponytail: 实测模型会写成「小美刚下班」这种第三人称，喂回提示词就变味了 ——
-        # 明确要求第一人称，落库时再剥一次名字前缀兜底。
+        # 要求第一人称，落库时再剥一次名字前缀兜底
         "self: 关于你（" + who + "）自己的近况、习惯、观点，用「我」开头写，不要出现名字\n"
         "user: 关于跟 TA 聊天那个人的近况、偏好\n"
         "shared: 两人之间的约定、共同经历\n\n"
@@ -133,7 +117,7 @@ def extract_memories(profile: dict, user_message: str, reply: str,
     try:
         out = llm.complete([{"role": "user", "content": prompt}], temperature=0.2, cfg=cfg)
     except (llm.NoKey, RuntimeError):
-        return mem  # ponytail: 记忆抽不到不影响对话本身，别让它炸掉主流程
+        return mem  # 记忆抽不到不影响对话主流程
     for line in out.splitlines():
         for k in mem:
             if line.strip().startswith(k):

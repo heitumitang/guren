@@ -10,10 +10,10 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final state = AppState();
   try {
-    // 最多等 3 秒载入本地配置；失败或超时也照常启动，避免某些机型上插件未就绪导致白屏。
+    // 最多等 3 秒载入本地配置；失败或超时则用默认配置启动，避免插件未就绪白屏。
     await state.load().timeout(const Duration(seconds: 3));
   } catch (_) {
-    // 忽略载入错误，用默认配置启动
+    // 载入失败时用默认配置启动
   }
   runApp(
     ChangeNotifierProvider.value(

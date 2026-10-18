@@ -1,7 +1,4 @@
-/// 人格引擎 —— server/engine.py 的 Dart 复刻。
-///
-/// 组装提示词 -> 调 LLM -> 输出红线过滤 -> 记忆。
-/// 红线在提示词里写死了，但提示词能被绕过，所以这里再拦一道。
+/// 人格引擎（server/engine.py 的 Dart 复刻）：组装提示词、调 LLM、红线过滤与记忆抽取。
 import 'llm.dart';
 import 'schema.dart';
 
@@ -10,16 +7,15 @@ const List<String> abuseWords = ['傻逼', '智障', '去死', '滚蛋', '有病
 final RegExp emailRe = RegExp(r'[\w.+-]+@[\w-]+\.[\w.]+');
 final RegExp selfHarmRe = RegExp(r'(怎么自杀|去死吧|不想活了|自残的方法|哪种死法)');
 
-/// 归一化时剥掉的标点/空白。用 \u0027 表示单引号，免得和 Dart 字符串引号打架。
+/// 归一化时剥掉的标点/空白（用 \u0027 避免与 Dart 字符串引号冲突）。
 final RegExp punctRe =
     RegExp('[\\s，。！？、,.!?…~～"\u0027「」“”]+');
 
-/// 返回违规原因，null = 通过。这是安全路径，别简化掉。
+/// 返回违规原因，null = 通过。
 String? redlineCheck(String text) {
   for (final w in abuseWords) {
     if (text.contains(w)) return '疑似人身攻击：含「$w」';
   }
-  // ponytail: 不用 lookbehind（Dart RegExp 支持但不稳），改成取到匹配后手动看边界
   if (_hasIsolated(RegExp(r'1[3-9]\d{9}'), text)) return '疑似泄露手机号';
   if (_hasIsolated(RegExp(r'\d{17}[\dXx]'), text)) return '疑似泄露身份证';
   if (_hasIsolated(RegExp(r'\d{16,19}'), text)) return '疑似泄露银行卡';
@@ -115,7 +111,7 @@ Future<Map<String, dynamic>> chat(
 
   final reason = redlineCheck(reply);
   if (reason != null) {
-    // 不重试、不改写——直接拦下暴露给人看，silent fix 会掩盖人格跑偏
+    // 直接拦下暴露给人看，不重试不改写（避免掩盖人格跑偏）
     return {'reply': '', 'blocked': true, 'reason': reason, 'raw': reply};
   }
   return {'reply': reply, 'blocked': false, 'reason': null, 'raw': reply};
@@ -145,7 +141,7 @@ Future<Map<String, List<dynamic>>> extractMemories(
       {'role': 'user', 'content': prompt}
     ], temperature: 0.2, cfg: cfg);
   } catch (_) {
-    return mem; // ponytail: 记忆抽不到不影响对话本身，别让它炸掉主流程
+    return mem;
   }
 
   for (final line in out.split('\n')) {

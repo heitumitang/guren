@@ -1,8 +1,4 @@
-/// 常驻调度执行层 —— server/dispatcher.py 的 Dart 复刻。
-///
-/// 关键设计不变：**生成和投递分离**。
-/// 收到消息立刻生成回复（此时调用方带着 key），再按调度延迟投递；
-/// 这样 key 不需要落盘，App 重启后待投递的内容也还在（pending.json）。
+/// server/dispatcher.py 的 Dart 复刻：生成与投递分离，延迟内容落盘到 pending.json，App 重启后仍可恢复。
 import 'dart:async';
 
 import 'store.dart';
@@ -40,7 +36,7 @@ class Dispatcher {
     await store.saveNpc(npcId, 'pending.json', pending);
   }
 
-  /// 排一条延迟投递。文本已经生成好了，所以这里不需要 key。
+  /// 排一条延迟投递（文本已生成，无需 key）。
   Future<String> queueDelivery(String npcId, String text, bool blocked,
       String? reason, DateTime when) async {
     final id = store.newId();
@@ -81,7 +77,7 @@ class Dispatcher {
       'reason': task['reason'],
     });
     if (!blocked) {
-      // 回复真正送达时才写历史（chat 只在生成时写了 user，避免「没回先显示」）
+      // 回复真正送达时才写 assistant（生成时只写了 user，避免「没回先显示」）
       await store.appendHistory(npcId, [
         {'role': 'assistant', 'content': task['text'] ?? '', 'at': _iso(now)},
       ]);

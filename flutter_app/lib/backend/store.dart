@@ -1,10 +1,4 @@
-/// 内嵌后端的数据存储 —— server/main.py 存取层的 Dart 复刻。
-///
-/// 目录布局与 Python 版完全一致，同一份数据两种后端都能读：
-///   <root>/index.json
-///   <root>/user.json
-///   <root>/characters/<id>/persona.json | memory.json | history.json
-///   <root>/characters/<id>/outbox.json | pending.json | last_read.json | last_proactive.json
+/// 内嵌后端数据存储（server/main.py 存取层的 Dart 复刻）：目录布局与 Python 版一致，同一份数据两种后端都能读。
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
@@ -36,8 +30,6 @@ class Store {
     if (!await dir.exists()) await dir.create(recursive: true);
     if (!await charDir.exists()) await charDir.create(recursive: true);
   }
-
-  // ---------- 通用存取 ----------
 
   Future<dynamic> loadPath(String path, dynamic def) async {
     final f = File(path);
@@ -111,8 +103,6 @@ class Store {
     return n;
   }
 
-  // ---------- 索引 ----------
-
   Future<List<dynamic>> readIndex() async {
     final v = await loadPath(indexFile, null);
     return v is List ? v : <dynamic>[];
@@ -161,8 +151,6 @@ class Store {
     const chars = '0123456789abcdef';
     return List.generate(8, (_) => chars[r.nextInt(16)]).join();
   }
-
-  // ---------- 用户档案 ----------
 
   Future<Map<String, dynamic>> loadUser() async {
     final raw = await loadPath(userFile, null);

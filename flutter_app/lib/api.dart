@@ -1,7 +1,4 @@
-/// 后端 API 客户端。
-///
-/// 后端是一套独立运行的 Python FastAPI 服务（默认 http://127.0.0.1:8000）。
-/// 所有端点的路径、请求/响应字段严格对齐 server/main.py。
+/// 后端 FastAPI 服务的 Dart 客户端，端点与 server/main.py 对齐。
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'models.dart';
@@ -63,8 +60,6 @@ class ApiClient {
     return body;
   }
 
-  // ---------------- 健康 / 配置 ----------------
-
   Future<Map<String, dynamic>> getHealth() async =>
       (await _get('/health')) as Map<String, dynamic>;
 
@@ -75,8 +70,6 @@ class ApiClient {
   Future<PresetsResult> getPresets() async =>
       PresetsResult.fromJson((await _get('/presets')) as Map<String, dynamic>);
 
-  // ---------------- 用户档案 ----------------
-
   Future<UserProfile> getUser() async =>
       UserProfile.fromJson((await _get('/user')) as Map<String, dynamic>);
 
@@ -84,8 +77,6 @@ class ApiClient {
     final j = (await _put('/user', u.toJson())) as Map<String, dynamic>;
     return UserProfile.fromJson(j['user'] as Map<String, dynamic>);
   }
-
-  // ---------------- 人物 ----------------
 
   Future<List<CharacterIndex>> listCharacters() async {
     final j = (await _get('/characters')) as Map<String, dynamic>;
@@ -140,8 +131,6 @@ class ApiClient {
     await _post('/characters/$id/scale', body);
   }
 
-  // ---------------- 蒸馏 ----------------
-
   Future<DistillResult> distill({
     required List<Map<String, dynamic>> messages,
     required String targetName,
@@ -165,8 +154,6 @@ class ApiClient {
     final j = (await _post('/distill', body)) as Map<String, dynamic>;
     return DistillResult.fromJson(j);
   }
-
-  // ---------------- 聊天 ----------------
 
   Future<ChatResult> chat(
     String id, {
@@ -194,8 +181,7 @@ class ApiClient {
         .toList();
   }
 
-  /// 收件箱。后端返回的是 {"total": n, "items": [...]}（web 版也读 items），
-  /// 之前这里读的是 messages —— 一直读成空列表，导致延迟回复/主动消息不会实时出现。
+  /// 收件箱。后端以 {"total","items"} 返回，读取 items 字段。
   Future<List<OutboxItem>> outbox(String id, {int since = 0}) async {
     final j = await _get('/characters/$id/outbox',
         {'since': since.toString()});
@@ -211,7 +197,7 @@ class ApiClient {
         .toList();
   }
 
-  /// 标记已读：推进该 NPC 的「上次已读」时刻，清空未读红点。
+  /// 标记已读，清空该 NPC 的未读红点。
   Future<void> markRead(String id) async => _post('/characters/$id/read', {});
 
   Future<ProactiveResult> proactive(String id, [LLMConfig? llm]) async {
@@ -224,8 +210,6 @@ class ApiClient {
   Future<SchedulePreview> schedulePreview(String id) async =>
       SchedulePreview.fromJson(
           (await _get('/characters/$id/schedule/preview')) as Map<String, dynamic>);
-
-  // ---------------- OCR ----------------
 
   Future<OcrResult> ocr(List<String> images, {String targetSide = 'left'}) async {
     final j = (await _post('/ocr', {

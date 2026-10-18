@@ -1,7 +1,4 @@
-/// 内嵌后端的启动门面。
-///
-/// 手机端装不了 Python，所以把后端用 Dart 复刻了一份跑在 App 进程里，
-/// 只监听 127.0.0.1 —— 手机不用配任何地址、不用连电脑，装完即用。
+/// 内嵌后端启动门面：手机端无法跑 Python，用 Dart 复刻一份跑在 App 进程里，仅监听 127.0.0.1。
 import 'dart:io';
 
 import 'package:path_provider/path_provider.dart';

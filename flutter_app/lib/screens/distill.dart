@@ -1,10 +1,4 @@
-/// 蒸馏向导：导入聊天记录 → 蒸馏 → 校准。对齐 Web 版三步体验。
-///
-///   第 1 步 导入：粘贴聊天导出文本，或选聊天截图走 OCR（≥10 条才能蒸馏）
-///   第 2 步 蒸馏：填 TA 的名字/头像/性别/关系，POST /distill
-///   第 3 步 校准：逐条勾选特质/缺点，拖缺点强度滑块，POST /review + /scale
-///
-/// 完成后 pop 返回 npc_id，由人物列表打开聊天。
+/// 蒸馏向导：导入聊天记录 → 蒸馏 → 校准，对齐 Web 版三步流程。
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -29,7 +23,6 @@ class DistillWizard extends StatefulWidget {
 class _DistillWizardState extends State<DistillWizard> {
   int _step = 0; // 0 导入 / 1 蒸馏 / 2 校准
 
-  // —— 第 1 步：导入 ——
   bool _ocrMode = false;
 
   /// 截图 OCR 依赖 Python 版的 RapidOCR；手机端跑的是 App 内置后端，没有 OCR。
@@ -42,9 +35,7 @@ class _DistillWizardState extends State<DistillWizard> {
   List<ImportMessage> _msgs = [];
   String? _importErr;
 
-  // —— 第 2 步：蒸馏 ——
-  /// 合规确认：这些聊天记录来自真人，蒸馏会把它发给模型服务商。
-  /// 每次导入都要重新勾（不持久化），因为每换一个人就是换一个数据主体。
+  /// 合规确认：聊天记录会发给模型服务商；每次导入重新勾选（不持久化）。
   bool _consent = false;
   String _emoji = '🙂';
   String _avatarData = ''; // 图片头像 data URL
@@ -53,7 +44,6 @@ class _DistillWizardState extends State<DistillWizard> {
   DistillResult? _result;
   Persona? _persona;
 
-  // —— 第 3 步：校准 ——
   final Map<String, bool> _accept = {}; // 't0'/'f1' -> 是否保留
   double _flawScale = 0.7;
 
@@ -70,8 +60,6 @@ class _DistillWizardState extends State<DistillWizard> {
     _relCtl.dispose();
     super.dispose();
   }
-
-  // ---------------- 通用 ----------------
 
   void _startBusy(List<String> tips) {
     _tipIdx = 0;
@@ -106,8 +94,6 @@ class _DistillWizardState extends State<DistillWizard> {
     ScaffoldMessenger.of(context)
         .showSnackBar(SnackBar(content: Text(msg)));
   }
-
-  // ---------------- 第 1 步：导入 ----------------
 
   void _parseText() {
     final name = _taNameCtl.text.trim();
@@ -181,8 +167,6 @@ class _DistillWizardState extends State<DistillWizard> {
     }
   }
 
-  // ---------------- 第 2 步：蒸馏 ----------------
-
   Future<void> _pickAvatar() async {
     try {
       final x = await _picker.pickImage(source: ImageSource.gallery);
@@ -242,8 +226,6 @@ class _DistillWizardState extends State<DistillWizard> {
     }
   }
 
-  // ---------------- 第 3 步：校准 ----------------
-
   Future<void> _submitReview() async {
     final p = _persona;
     if (p == null) return;
@@ -273,8 +255,6 @@ class _DistillWizardState extends State<DistillWizard> {
       if (mounted) setState(() => _busy = false);
     }
   }
-
-  // ---------------- UI ----------------
 
   @override
   Widget build(BuildContext context) {
@@ -348,8 +328,6 @@ class _DistillWizardState extends State<DistillWizard> {
       ),
     );
   }
-
-  // —— 第 1 步 ——
 
   Widget _buildImport() {
     final connected = context.watch<AppState>().connected;
@@ -543,10 +521,7 @@ class _DistillWizardState extends State<DistillWizard> {
     );
   }
 
-  // —— 第 2 步 ——
-
-  /// 使用确认：蒸馏会把聊天记录整段发给模型服务商，这是数据离开本机的一步，
-  /// 必须让人在这里停一下。设计文档把「真实人物数据」列为高风险项。
+  /// 使用确认：聊天记录会整段发给模型服务商，是数据离开本机的一步，必须在此停一下。
   Widget _buildConsent() {
     return Card(
       color: kWechatGreen.withOpacity(0.06),
@@ -673,8 +648,6 @@ class _DistillWizardState extends State<DistillWizard> {
       ),
     );
   }
-
-  // —— 第 3 步 ——
 
   Widget _buildReview() {
     final p = _persona;

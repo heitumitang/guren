@@ -1,7 +1,4 @@
-/// 全局应用状态（provider + ChangeNotifier）。
-///
-/// 持有后端地址、LLM 配置、用户档案、人物列表、连接健康状态，
-/// 并通过 shared_preferences 持久化连接配置。
+/// 全局应用状态，持有连接配置、用户档案、人物列表并通过 shared_preferences 持久化。
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -19,14 +16,14 @@ class AppState extends ChangeNotifier {
   bool connected = false;
   String? error;
 
-  /// 是否跑的是 App 内置的 Dart 后端（手机端默认，桌面端兜底）。
+  /// 是否使用 App 内置的 Dart 后端（手机端默认，桌面端兜底）。
   bool embedded = false;
 
   AppState() {
     api = ApiClient(apiBaseUrl);
   }
 
-  /// 启动时从持久化读取连接配置。必须 await 后再跑 UI。
+  /// 启动时从持久化读取连接配置（需 await 后再跑 UI）。
   Future<void> load() async {
     final p = await SharedPreferences.getInstance();
     apiBaseUrl = p.getString('apiBaseUrl') ?? 'http://127.0.0.1:8000';
@@ -69,7 +66,7 @@ class AppState extends ChangeNotifier {
     return connected;
   }
 
-  /// 把底层连接异常转成一句人话，别把 SocketException/ClientException 整坨甩给用户。
+  /// 把底层连接异常转成一句可读提示，不把原始异常甩给用户。
   static String cleanConnError(Object e) {
     final s = e.toString();
     if (s.contains('Connection refused') ||
@@ -80,12 +77,8 @@ class AppState extends ChangeNotifier {
     return s;
   }
 
-  /// 整包自包含：健康检查失败时，自动拉起打包内置的后端（仅 Windows 整包版有）。
-  ///
-  /// 布局约定：<包目录>/server/guren-server.exe（PyInstaller 冻结的单文件服务），
-  /// 数据落在 <包目录>/guren-data/。注意不能叫 data/——那是 Flutter Windows
-  /// 运行时资源目录（app.so/icudtl.dat/flutter_assets），撞名会互相污染。  /// 服务端带父进程看门狗，App 退出时服务自杀，不留孤儿。
-  /// 开发模式（flutter run）没有 server/ 目录，直接返回 false 走原设置页流程。
+  /// 整包自包含：健康失败时自动拉起内置后端（仅 Windows 整包版）。
+  /// 数据目录固定为 guren-data/，不可叫 data/（那是 Flutter 运行时资源目录，会冲突）。
   Future<bool> startBundledServer() async {
     if (!Platform.isWindows) return false;
     try {
@@ -116,8 +109,7 @@ class AppState extends ChangeNotifier {
     }
   }
 
-  /// 手机端没有 Python，用 App 内置的 Dart 后端：起一个只监听 127.0.0.1 的服务，
-  /// 装完即用，不用连电脑、不用填地址。桌面端在外置后端拉不起来时也走这条路兜底。
+  /// 手机端用内置 Dart 后端免配置；桌面端外置后端拉不起来时兜底。
   Future<bool> startEmbeddedServer() async {
     try {
       final url = await EmbeddedBackend().start();

@@ -1,6 +1,4 @@
-/// 内嵌后端的 LLM 调用层 —— validator/llm.py 的 Dart 复刻。
-///
-/// 约定不变：API key 由使用者自己在设置页填写，只存本机，随请求带入，后端不托管。
+/// 内嵌后端 LLM 调用层（validator/llm.py 的 Dart 复刻）：API key 由用户填写、只存本机、随请求带入。
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -93,7 +91,6 @@ Future<String> complete(
 
     if (r.statusCode >= 400) {
       final detail = utf8.decode(r.bodyBytes, allowMalformed: true);
-      // ponytail: provider 不认 response_format 就退化成普通调用，别把用户卡死
       if (useJson) return post(false);
       throw LlmError(
           '${r.statusCode} ${detail.length > 200 ? detail.substring(0, 200) : detail}');

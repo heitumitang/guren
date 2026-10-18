@@ -1,10 +1,5 @@
-/// 数据模型层。
-///
-/// 全部按 server/main.py 的真实 JSON 契约手写 fromJson / toJson，
-/// 不依赖 json_serializable（无需 build_runner）。
-/// Persona 用 Map 包装 + typed accessors，避免与后端 schema 版本耦合导致编译失败。
+/// 后端 JSON 契约的数据模型，手写 fromJson/toJson；Persona 用 Map 包装避免与后端 schema 版本耦合。
 
-// ---------------- LLM 配置（对应后端 LLMIn）----------------
 
 class LLMConfig {
   final String apiKey;
@@ -34,7 +29,6 @@ class LLMConfig {
       );
 }
 
-// ---------------- 用户档案（对应后端 UserIn / empty_user）----------------
 
 class UserProfile {
   final String name;
@@ -95,7 +89,6 @@ class UserProfile {
       );
 }
 
-// ---------------- 人物索引项（对应 GET /characters 数组元素）----------------
 
 class CharacterIndex {
   final String id;
@@ -122,7 +115,6 @@ class CharacterIndex {
         unread = (j['unread'] as num? ?? 0).toInt();
 }
 
-// ---------------- 人格档案（包装后端完整 persona.json）----------------
 
 class Persona {
   final Map<String, dynamic> raw;
@@ -152,12 +144,8 @@ class Persona {
       Map<String, dynamic>.from(raw['basics'] as Map? ?? {});
 }
 
-// ---------------- 聊天消息 ----------------
 
-/// 消息去重键：时间戳一律归一化到秒。
-///
-/// 历史里的 at 是 DateTime（toIso8601String 会带 .000），收件箱里的 at 是后端写的
-/// 秒级字符串（不带 .000）——两边格式不同会算出不同的 key，同一条消息就会显示两次。
+/// 消息去重键：时间戳归一化到秒（历史 at 带毫秒、收件箱为秒级，格式不同会算成不同 key 导致重复）。
 String dedupeKey(String atRaw, String text) {
   final d = DateTime.tryParse(atRaw);
   return '${d == null ? atRaw : d.toIso8601String().substring(0, 19)}|$text';
@@ -181,7 +169,6 @@ class ChatMessage {
   String get key => dedupeKey(at.toIso8601String(), content);
 }
 
-// ---------------- 引用回复 ----------------
 
 class Quote {
   final String role; // 'user' | 'assistant'
@@ -192,7 +179,6 @@ class Quote {
   Map<String, dynamic> toJson() => {'role': role, 'text': text};
 }
 
-// ---------------- 聊天返回（涵盖 immediate / delayed / 不回 / 拦截）----------------
 
 class ChatResult {
   final bool willReply;
@@ -217,7 +203,6 @@ class ChatResult {
         raw = j['raw'] as bool?;
 }
 
-// ---------------- 收件箱（延迟投递的消息）----------------
 
 class OutboxItem {
   final String id;
@@ -238,7 +223,6 @@ class OutboxItem {
         delivered = j['delivered'] as bool? ?? false;
 }
 
-// ---------------- 时间表预览（对应 schedule/preview）----------------
 
 class SchedulePreview {
   final bool online;
@@ -255,7 +239,6 @@ class SchedulePreview {
         reason = (j['reason'] ?? '').toString();
 }
 
-// ---------------- 主动发起（proactive）----------------
 
 class ProactiveResult {
   final bool initiated;
@@ -270,7 +253,6 @@ class ProactiveResult {
         reason = j['reason'] as String?;
 }
 
-// ---------------- 预设 ----------------
 
 class Preset {
   final String id;
@@ -282,7 +264,7 @@ class Preset {
       : id = (j['id'] ?? '').toString(),
         name = (j['name'] ?? '').toString(),
         emoji = (j['emoji'] ?? '').toString(),
-        // 后端 list_presets 返回的键是 tagline；兼容旧键 desc
+        // 后端键为 tagline，兼容旧键 desc
         desc = (j['tagline'] ?? j['desc'] ?? '').toString();
 }
 
@@ -294,7 +276,6 @@ class PresetsResult {
             .toList());
 }
 
-// ---------------- 蒸馏结果 ----------------
 
 class DistillResult {
   final bool ok;
@@ -311,7 +292,6 @@ class DistillResult {
         flaws = j['flaws'] as int? ?? 0;
 }
 
-// ---------------- 创建人物返回 ----------------
 
 class CreateResult {
   final String id;
@@ -322,7 +302,6 @@ class CreateResult {
         persona = Persona(j['persona'] as Map<String, dynamic>? ?? {});
 }
 
-// ---------------- API key 测试返回 ----------------
 
 class ConfigTestResult {
   final bool ok;
@@ -337,7 +316,6 @@ class ConfigTestResult {
         using = j['using'] as Map<String, dynamic>?;
 }
 
-// ---------------- OCR 返回 ----------------
 
 class OcrResult {
   final List<dynamic> messages;

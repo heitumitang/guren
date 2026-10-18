@@ -1,11 +1,4 @@
-"""聊天截图 -> 对话流。
-
-说话人用气泡颜色判断，不靠左右位置 —— 微信里对方是白气泡、你是绿气泡，
-这比「中线分边」可靠，还能顺带把梗图/表情包里的文字识别出来丢掉。
-
-输出统一格式：[{"i": int, "speaker": "target"|"user", "text": str}, ...]
-distill.py 只吃这个格式，OCR 与蒸馏彻底解耦。
-"""
+"""聊天截图 -> 对话流：按气泡颜色判边，输出 {"i","speaker","text"} 统一格式。"""
 
 from __future__ import annotations
 
@@ -79,10 +72,7 @@ def _bubble_side(arr, r: dict) -> str:
 
 def ocr_tall_image(path: str, chunk_h: int = 1600, overlap: int = 90,
                    skip_top: int = 150) -> list[dict]:
-    """长截图切块 OCR。单张太长一次识别又慢又容易漏，切块加回 y 偏移再合并。
-
-    skip_top: 丢弃顶部状态栏+标题栏。ponytail: 150px 对手机截图通用，不够再调。
-    """
+    """长截图切块 OCR，加回 y 偏移再合并。skip_top 丢弃顶部状态栏+标题栏。"""
     try:
         import numpy as np
         from PIL import Image
@@ -101,7 +91,7 @@ def ocr_tall_image(path: str, chunk_h: int = 1600, overlap: int = 90,
         result, _ = ocr(arr[y:bottom])
         for box, text, score in result or []:
             text = text.strip()
-            score = float(score)  # ponytail: 这版 RapidOCR 返回的是字符串
+            score = float(score)  # RapidOCR 返回的是字符串，转 float
             if not text or score < 0.45:
                 continue
             xs = [p[0] for p in box]
@@ -139,8 +129,7 @@ def parse_chat(rows: list[dict], target_side: str = "left", width: float | None 
         if name and not t:
             continue                   # 群聊昵称标签行（内容在下一行），整行丢
         if name and r.get("side") == "float":
-            # 微信引用卡片：「原作者：原话」。前缀是被引用的人，不是回话人，
-            # 靠位置归属必然张冠李戴，污染证据链。原话在完整记录里有原件 —— 丢。
+            # 引用卡片：前缀是被引用的人不是回话人，靠位置归属会张冠李戴 —— 丢
             n_quotes += 1
             continue
         if _is_noise(t):
@@ -151,7 +140,7 @@ def parse_chat(rows: list[dict], target_side: str = "left", width: float | None 
     if not usable:
         return []
 
-    # ponytail: 用最大右边界当图宽，省掉一个依赖。判边失败才用它兜底。
+    # 用最大右边界当图宽兜底，判边失败才用它
     mid = (width if width else max(r["x1"] for r in usable)) / 2
 
     msgs: list[dict] = []
@@ -175,12 +164,7 @@ def parse_chat(rows: list[dict], target_side: str = "left", width: float | None 
 
 
 def merge_msgs(chunks: list[list[dict]], max_overlap: int = 500) -> list[dict]:
-    """合并多张截图的对话流。滚动截图必然有重叠，重叠的那段要去掉。
-
-    做法：新一段的开头如果和已合并的结尾有 k 条完全一致，就把这 k 条丢掉。
-    k 取最长匹配。上限默认 500 —— 单张截图不可能装下这么多条，
-    但设小了会在「两张图几乎完全重叠」时静默失效（实测踩过：上限 40，传同一张图两次不去重）。
-    """
+    """合并多张截图的对话流，去掉滚动截图重叠部分（最长匹配去重）。"""
     merged: list[dict] = []
     for chunk in chunks:
         if not chunk:

@@ -1,5 +1,4 @@
-/// 性格标签库 —— 没有聊天记录时，自由组合多个性格凭空造 NPC。
-/// server/presets.py 的 Dart 复刻（数据必须逐条一致，否则两端造出的人不一样）。
+/// 性格标签库（server/presets.py 的 Dart 复刻）：无聊天记录时组合性格凭空造 NPC，数据须与 Python 端逐条一致。
 import 'schema.dart';
 
 Map<String, dynamic> _accepted(Map<String, dynamic> kw) => {

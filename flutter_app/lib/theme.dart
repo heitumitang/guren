@@ -1,5 +1,4 @@
-/// 微信绿主题：主色对齐微信绿（#07C160），危险/删除/未读红点保留朱砂红。
-/// 全 App 字体为 Noto Serif SC（宋体衬线，见 pubspec.yaml fonts）。
+/// 微信绿主题（主色 #07C160），全 App 用 Noto Serif SC 衬线字体。
 import 'package:flutter/material.dart';
 
 const Color kPaper = Color(0xFFF7F3EC);
@@ -18,7 +17,7 @@ ThemeData buildTheme(Brightness b) {
   final onSurface = dark ? kInkDark : kInk;
   final line = dark ? kLineDark : kLine;
 
-  // fromSeed 生成完整 ColorScheme（避免新版 Flutter 构造器缺参报错），再覆盖关键色。
+  // fromSeed 生成完整 ColorScheme 再覆盖关键色（避免新版构造器缺参报错）。
   final scheme = ColorScheme.fromSeed(
     seedColor: kWechatGreen,
     brightness: b,
