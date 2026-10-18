@@ -1,0 +1,5 @@
+# Docker 镜像「核心」依赖：纯后端聊天服务运行所需。
+# （蒸馏 / 校验 / 引擎本体零依赖，标准库就够；截图 OCR 见 requirements-ocr.txt）
+fastapi>=0.110
+uvicorn>=0.29
+pydantic>=2.6

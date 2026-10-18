@@ -1,0 +1,42 @@
+# 你自己的 key 和隐私数据，绝不能进仓库
+.env
+.env.local
+server/data/
+guren-data/
+chat.json
+profile.json
+report.md
+prompt.txt
+
+# 构建产物
+build/
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+server/build/
+server/dist/
+打包产物/
+*.log
+
+# 平台本地配置
+android/local.properties
+android/.gradle/
+android/app/.cxx/
+windows/flutter/ephemeral/
+linux/flutter/ephemeral/
+macos/Flutter/ephemeral/
+ios/Flutter/ephemeral/
+**/Pods/
+**/.symlinks/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# 编辑器 / 系统
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

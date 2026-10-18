@@ -1,0 +1,3 @@
+# 核心流程（distill / 校验 / 报告）零依赖，标准库即可跑。
+# 只有截图 OCR 需要额外装：
+# rapidocr-onnxruntime>=1.3
