@@ -4,20 +4,7 @@
 
 **不是做一个"更懂你的助手"，是做一个会敷衍你、会记错事、深夜才回、偶尔已读不回的 TA。**
 
-所有数据只存在你自己的设备上。模型用你自己提供的 API Key，本项目不托管模型、不代购 Key、不存 Key。
-
 ---
-
-## 它跟别的 AI 陪伴有什么不同
-
-| | 常见 AI 陪伴 | 故人 |
-|---|---|---|
-| 人设来源 | 手写提示词 | 从真实聊天记录蒸馏 |
-| 记忆 | 有 | 有，且分三层 |
-| 缺点 | 没有，永远耐心友善 | 有，且强度可调 |
-| 回复速度 | 秒回 | 有作息，深夜不在线，会已读不回 |
-| 主动找你 | 不会 | 会 |
-| 身份 | 明确是 AI | 界面显著标注 AI 生成 |
 
 ## 下载安装
 
@@ -25,10 +12,10 @@
 
 | 平台 | 文件 | 说明 |
 |---|---|---|
-| Windows | `guren-Windows-v0.1.0.zip` | 解压后双击里面的 `故人.exe`。后端已内置，**不用装 Python 或任何环境** |
-| Android | `guren-Android-v0.1.0.apk` | 装完即用。后端已内置在 App 里，**不用连电脑、不用配地址** |
+| Windows | `guren-Windows-v0.1.0.zip` | 解压后双击里面的 `故人.exe`。 |
+| Android | `guren-Android-v0.1.0.apk` | 装完即用。|
 
-第一次打开后在「设置」里填你的 LLM API Key（DeepSeek / 通义千问 / OpenAI，或任何 OpenAI 兼容接口的地址和模型名），就可以开始。
+第一次打开后在「设置」里填你的API Key（DeepSeek / 通义千问 / OpenAI，或任何 OpenAI 兼容接口的地址和模型名），就可以开始。
 
 > 手机端没有截图 OCR（识别模型太大，没塞进 App）。想从聊天记录蒸馏，请用「粘贴文本」导入，详见 [使用说明.txt](使用说明.txt)。
 
@@ -36,7 +23,7 @@
 
 三种方式，都在人物列表右下角的「＋」里：
 
-**1. 蒸馏（最像）**
+**1. 蒸馏**
 导入聊天记录 → 模型从中提炼人格 → 逐条人工校准。
 
 - 电脑版支持**截图 OCR**：微信/QQ 聊天长截图直接丢进去，离线识别（内置 PP-OCRv3 中文模型），滚动重叠会自动去重。
@@ -86,26 +73,11 @@ python -m uvicorn main:app --host 127.0.0.1 --port 8000
 
 Windows 下可直接双击 `run-server.bat`。
 
-- Key 在网页右上角「设置」里填，只存你浏览器本机。
+- Key 在「设置」里填，只存你本机。
 - 数据（人格档案 / 记忆 / 收件箱）都在 `./server/data`，删容器不丢。
 
-## 从源码构建
-
-需要 Flutter 3.47+，打 APK 还需要 JDK 21。
-
-```bash
-cd flutter_app
-flutter pub get
-
-flutter build windows --release   # 产物在 build/windows/x64/runner/Release/
-flutter build apk --release       # 产物在 build/app/outputs/flutter-apk/
 ```
 
-Windows 版如果要带 Python 后端（含截图 OCR），把 `server/` 用 PyInstaller 打成单文件 exe，放到 exe 同级的 `server/` 目录下：
-
-```bash
-cd server
-pyinstaller --onefile --windowed --name guren-server main.py
 ```
 
 不打包后端也能跑：App 起不来外部后端时会自动回退到内置的 Dart 后端，只是没有 OCR。
@@ -118,8 +90,6 @@ pyinstaller --onefile --windowed --name guren-server main.py
 2. 不泄露真实人物隐私
 3. 不引导自我伤害或违法违规
 4. 不冒充真人欺骗第三方；被问起必须如实说明是 AI 模拟
-
-提示词能被绕过，所以输出层还有一道硬校验。
 
 ## 合规与伦理
 
@@ -136,4 +106,4 @@ pyinstaller --onefile --windowed --name guren-server main.py
 
 Apache-2.0。
 
-本项目不 fork 任何 AGPL 项目（SillyTavern / WeClone / AstrBot 均为 AGPL-3.0），只借鉴思路自行实现。
+本项目不fork任何AGPL项目，只借鉴思路自行实现。
