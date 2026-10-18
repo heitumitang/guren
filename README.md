@@ -25,8 +25,8 @@
 
 | 平台 | 文件 | 说明 |
 |---|---|---|
-| Windows | `故人-Windows-v0.1.0.zip` | 解压后双击 `故人.exe`。后端已内置，**不用装 Python 或任何环境** |
-| Android | `故人-Android-v0.1.0.apk` | 装完即用。后端已内置在 App 里，**不用连电脑、不用配地址** |
+| Windows | `guren-Windows-v0.1.0.zip` | 解压后双击里面的 `故人.exe`。后端已内置，**不用装 Python 或任何环境** |
+| Android | `guren-Android-v0.1.0.apk` | 装完即用。后端已内置在 App 里，**不用连电脑、不用配地址** |
 
 第一次打开后在「设置」里填你的 LLM API Key（DeepSeek / 通义千问 / OpenAI，或任何 OpenAI 兼容接口的地址和模型名），就可以开始。
 
