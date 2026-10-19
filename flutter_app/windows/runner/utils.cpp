@@ -64,6 +64,7 @@ std::string Utf8FromUtf16(const wchar_t* utf16_string) {
       input_length, utf8_string.data(), target_length, nullptr, nullptr);
   if (converted_length == 0) {
     return std::string();
+    
   }
   return utf8_string;
 }
