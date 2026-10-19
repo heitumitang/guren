@@ -1,5 +1,5 @@
 name: guren
-description: "真人聊天模拟 - Flutter 客户端（后端为独立的 Python FastAPI 服务）"
+description: "聊天模拟 - Flutter 客户端（后端为独立的 Python FastAPI 服务）"
 publish_to: 'none'
 version: 0.1.0+1
 
