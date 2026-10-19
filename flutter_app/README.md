@@ -1,18 +1,17 @@
 # 故人 · Flutter 客户端
 
-「故人」的客户端工程，一套代码同时出 Windows 和 Android 两端。
+“故人”的客户端工程，一套代码同时出 Windows 和 Android 两端
 
-## 两套后端，客户端只认一个地址
 
-客户端所有请求都走一个 HTTP baseUrl，至于后面是谁在应答，它不关心：
+客户端所有请求都走一个 HTTP baseUrl
 
-- **App 内置后端**（`lib/backend/`）：用 `dart:io HttpServer` 跑在 App 进程里，监听 `127.0.0.1`。
-  手机端默认用它，所以装完即用、不用连电脑；桌面端在外部后端起不来时也回退到它。
-  纯 Dart 实现，**没有截图 OCR**。
-- **Python 后端**（仓库根的 `server/` + `validator/`）：功能完整，带离线 OCR。
-  桌面版打包时把它做成 exe 放进 `server/` 目录，App 启动时拉起；也可以自己单独跑。
+- **App 内置后端**（`lib/backend/`）：用 `dart:io HttpServer` 跑在 App 进程里，监听 `127.0.0.1`
+  手机端默认，装完即用、不用连电脑
+  纯 Dart 实现，**没有截图 OCR**
+- **Python 后端**（仓库根的 `server/` + `validator/`）：功能完整，带离线 OCR
+  桌面版打包时把它做成 exe 放进 `server/` 目录，App 启动时拉起；也可以自己单独跑
 
-两套后端的 JSON 契约和数据目录布局一致（都写 `guren-data/`），改接口时两边要同步改。
+两套后端的 JSON 契约和数据目录布局一致（都写 `guren-data/`），改接口时两边要同步改
 
 ## 目录
 
