@@ -376,10 +376,20 @@ class EmbeddedServer {
       {'role': 'user', 'content': message, 'at': nowIso(now)},
     ]);
 
+    // 上下文历史：客户端没传时兜底从存储读（最后一条是刚落盘的当前消息，要排除）
+    var history = (b['history'] as List?) ?? const [];
+    if (history.isEmpty) {
+      final all = await store.loadHistory(id);
+      if (all.length > 1) {
+        final end = all.length - 1;
+        history = all.sublist(end > 12 ? end - 12 : 0, end);
+      }
+    }
+
     Map<String, dynamic> out;
     try {
       out = await eng.chat(p, userMessage,
-          history: b['history'] as List?,
+          history: history,
           memoryLines: mem,
           cfg: cfg,
           userProfile: await store.loadUser());
