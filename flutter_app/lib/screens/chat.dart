@@ -189,6 +189,12 @@ class _ChatScreenState extends State<ChatScreen> {
     final text = _ctl.text.trim();
     if (text.isEmpty || _busy) return;
     final s = context.read<AppState>();
+    // 组装最近 12 条历史（不含当前这条），让模型记得之前聊过什么
+    var hist = [
+      for (final m in _msgs)
+        if (m.content.trim().isNotEmpty) {'role': m.role, 'content': m.content},
+    ];
+    if (hist.length > 12) hist = hist.sublist(hist.length - 12);
     _addUser(text);
     final quote = _quote;
     _ctl.clear();
@@ -200,6 +206,7 @@ class _ChatScreenState extends State<ChatScreen> {
       final r = await s.api.chat(
         widget.npcId,
         message: text,
+        history: hist,
         quote: quote,
         llm: s.llm,
         immediate: _immediate,
