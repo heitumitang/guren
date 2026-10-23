@@ -566,8 +566,16 @@ async def chat(npc_id: str, body: ChatIn):
         {"role": "user", "content": body.message, "at": now.isoformat(timespec="seconds")},
     ])
 
+    # 上下文历史：客户端没传时兜底从存储读（最后一条是刚落盘的当前消息，要排除）
+    history = body.history or []
+    if not history:
+        all_msgs = _load_history(npc_id)
+        if len(all_msgs) > 1:
+            end = len(all_msgs) - 1
+            history = all_msgs[max(0, end - 12):end]
+
     try:
-        out = await asyncio.to_thread(engine.chat, p, user_message, body.history, mem, cfg,
+        out = await asyncio.to_thread(engine.chat, p, user_message, history, mem, cfg,
                                       _load_user())
     except llm.NoKey as e:
         raise HTTPException(400, f"{e}。先调 /config/test 验一下 key") from e
