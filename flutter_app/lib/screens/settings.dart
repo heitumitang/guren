@@ -1,4 +1,5 @@
 /// 设置页：后端地址 + LLM 配置 + 用户档案 + 连接测试。
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -52,18 +53,35 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   bool _userLoaded = false;
 
+  late final AppState _s;
+  Timer? _saveDebounce;
+
   @override
   void initState() {
     super.initState();
-    final s = context.read<AppState>();
-    _urlCtl.text = s.apiBaseUrl;
-    _keyCtl.text = s.llm.apiKey;
-    _baseCtl.text = s.llm.baseUrl;
-    _modelCtl.text = s.llm.model;
+    _s = context.read<AppState>();
+    _urlCtl.text = _s.apiBaseUrl;
+    _keyCtl.text = _s.llm.apiKey;
+    _baseCtl.text = _s.llm.baseUrl;
+    _modelCtl.text = _s.llm.model;
+    // 连接配置边填边存（防抖 600ms），不等手动点按钮，退出重进不丢
+    for (final c in [_urlCtl, _keyCtl, _baseCtl, _modelCtl]) {
+      c.addListener(_autoSave);
+    }
+  }
+
+  void _autoSave() {
+    _saveDebounce?.cancel();
+    _saveDebounce = Timer(const Duration(milliseconds: 600), () {
+      _s.applyConnection(_backendUrl(), _readLlm());
+    });
   }
 
   @override
   void dispose() {
+    _saveDebounce?.cancel();
+    // 离开设置页兜底存一次（防抖没触发也保住刚填的内容）
+    _s.applyConnection(_backendUrl(), _readLlm());
     for (final c in [
       _urlCtl,
       _keyCtl,
@@ -90,9 +108,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   /// 手机端跑的是 App 内置后端，地址栏不展示，直接用运行中的那个地址。
   String _backendUrl() {
-    final s = context.read<AppState>();
-    if (s.embedded) return s.apiBaseUrl;
-    return _urlCtl.text.trim().isEmpty ? s.apiBaseUrl : _urlCtl.text.trim();
+    if (_s.embedded) return _s.apiBaseUrl;
+    return _urlCtl.text.trim().isEmpty ? _s.apiBaseUrl : _urlCtl.text.trim();
   }
 
   bool get _isMobile => Platform.isAndroid || Platform.isIOS;
